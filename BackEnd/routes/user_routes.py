@@ -45,13 +45,6 @@ def me(usuario: User = Depends(get_current_user)):
     return usuario
 
 
-@router.get("/users", response_model=list[user_schemas.UserOut])
-def listar_usuarios(
-    db: Session = Depends(get_db), _: User = Depends(get_current_user)
-):
-    return user_services.listar_usuarios(db)
-
-
 @router.delete("/users/{usuario_id}")
 def deletar_usuario(
     usuario_id: int,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   HeartHandshake, 
@@ -11,6 +11,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 import MobileContainer from '../components/MobileContainer';
+import { loginUsuario, logout, rotaInicialPorRole, TOKEN_KEY } from '../services/api';
 
 export default function LoginCuidador() {
   const navigate = useNavigate();
@@ -18,10 +19,30 @@ export default function LoginCuidador() {
   const [senha, setSenha] = useState('');
   const [showSenha, setShowSenha] = useState(false);
 
-  const handleSubmit = (e) => {
+  // Chegar na tela de login encerra qualquer sessão anterior (cobre o botão "Sair" do painel)
+  useEffect(() => {
+    logout();
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Redireciona para o painel de gerenciamento do cuidador/familiar
-    navigate('/painel-cuidador');
+
+    if (!email.trim() || !senha) {
+      alert('Informe seu e-mail e sua senha.');
+      return;
+    }
+
+    try {
+      const { access_token, role } = await loginUsuario({
+        identificador: email.trim(),
+        senha,
+      });
+      localStorage.setItem(TOKEN_KEY, access_token);
+      // Cuidador/Familiar -> Painel do Cuidador | Idoso -> Home
+      navigate(rotaInicialPorRole(role));
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (

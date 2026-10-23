@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { criarUsuario } from '../services/api';
+import { criarUsuario, loginUsuario, rotaInicialPorRole, TOKEN_KEY } from '../services/api';
 import {
   HeartHandshake,
   ArrowLeft,
@@ -70,7 +70,7 @@ export default function CadastroCuidador() {
       nome: nome.trim(),
       email: email.trim().toLowerCase(),
       senha,
-      role: 'caregiver', // 'caregiver' ou cuidador no banco de dados
+      role: tipoCuidador, // 'caregiver' (cuidador) ou 'family' (familiar), conforme a aba escolhida
       telefone: telefone.trim(),
       data_nascimento: null,
       vinculo: vinculo.trim() || (tipoCuidador === 'caregiver' ? 'Cuidador Profissional' : 'Familiar'),
@@ -83,7 +83,14 @@ export default function CadastroCuidador() {
       setCarregando(true);
       console.log('Enviando cadastro de cuidador:', payload);
       await criarUsuario(payload);
-      setSucesso(true);
+
+      // Conta criada: já faz o login e leva direto ao painel
+      const { access_token, role } = await loginUsuario({
+        identificador: payload.email,
+        senha,
+      });
+      localStorage.setItem(TOKEN_KEY, access_token);
+      navigate(rotaInicialPorRole(role));
     } catch (error) {
       console.error('Erro ao cadastrar cuidador:', error);
       setMensagemErro(error.message || 'Não foi possível concluir o cadastro.');

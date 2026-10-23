@@ -12,6 +12,8 @@ from models.family_Member_models import family_member_elder
 
 if TYPE_CHECKING:
     from models.caregiver_models import Caregiver
+    from models.elder_invite_models import ElderInvite
+    from models.emergency_models import EmergencyAlert
     from models.family_Member_models import FamilyMember
     from models.medication_models import Medication
     from models.midecal_record_models import MedicalRecord
@@ -42,5 +44,11 @@ class Elder(Base):
         back_populates="elder", cascade="all, delete-orphan"
     )
     medical_records: Mapped[list[MedicalRecord]] = relationship(
+        back_populates="elder", cascade="all, delete-orphan"
+    )
+    invites: Mapped[list[ElderInvite]] = relationship(
+        back_populates="elder", cascade="all, delete-orphan"
+    )
+    emergency_alerts: Mapped[list[EmergencyAlert]] = relationship(
         back_populates="elder", cascade="all, delete-orphan"
     )

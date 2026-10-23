@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Ambulance, Pill, Calendar, FileText, Phone, CheckCircle2, ChevronRight, Sparkles } from 'lucide-react';
 import MobileContainer from '../components/MobileContainer';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import { getProximaDoseHoje, concluirDoseHoje } from '../utils/rotinaStorage';
+import { acionarSOS } from '../services/api';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -28,6 +29,24 @@ export default function Home() {
       window.removeEventListener('storage', handleAtualizacao);
     };
   }, []);
+
+  // SOS: avisa o backend (que notifica o cuidador) e, SEMPRE, abre o discador do SAMU (192)
+  const sosEmAndamento = useRef(false);
+
+  const handleSOS = async () => {
+    if (sosEmAndamento.current) return; // ignora toques repetidos enquanto avisa
+    sosEmAndamento.current = true;
+
+    try {
+      await acionarSOS();
+    } catch (error) {
+      // Sem internet/sessão expirada: não bloqueia a ligação (nada de alert() aqui)
+      console.error('Falha ao notificar o cuidador:', error);
+    } finally {
+      sosEmAndamento.current = false;
+      window.location.href = 'tel:192';
+    }
+  };
 
   const handleMarcarTomado = (e, id) => {
     e.stopPropagation();
@@ -63,7 +82,7 @@ export default function Home() {
           {/* Botão SOS Emergência */}
           <button 
             type="button" 
-            onClick={() => alert("SOS Disparado!")}
+            onClick={handleSOS}
             className="w-full bg-[#E02938] hover:bg-red-700 active:scale-[0.98] transition-all text-white rounded-2xl py-4 px-5 flex items-center justify-center gap-3 shadow-lg shadow-black/25 cursor-pointer mt-4"
           >
             <Ambulance className="w-7 h-7 stroke-[2.5]" />

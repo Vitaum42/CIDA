@@ -10,6 +10,8 @@ services:
       - ./BackEnd:/app
     environment:
       - PYTHONUNBUFFERED=1
+    env_file:
+      - ./BackEnd/.env
 
   frontend:
     build:

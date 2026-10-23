@@ -91,6 +91,8 @@ def login(db: Session, dados: user_schemas.LoginRequest) -> dict | None:
     return {
         "access_token": criar_access_token(usuario),
         "token_type": "bearer",
+        "role": usuario.role,
+        "user_id": usuario.id,
         "user": usuario,
     }
 

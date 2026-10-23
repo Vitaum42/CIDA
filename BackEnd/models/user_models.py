@@ -10,6 +10,7 @@ from database.conection import Base
 if TYPE_CHECKING:
     from models.caregiver_models import Caregiver
     from models.elder_models import Elder
+    from models.emergency_models import EmergencyNotification
     from models.family_Member_models import FamilyMember
 
 
@@ -34,4 +35,7 @@ class User(Base):
     )
     family_member: Mapped[FamilyMember | None] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    notificacoes_emergencia: Mapped[list[EmergencyNotification]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )

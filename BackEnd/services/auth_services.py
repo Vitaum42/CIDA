@@ -29,6 +29,7 @@ def criar_access_token(user: User) -> str:
     agora = datetime.now(timezone.utc)
     payload = {
         "sub": str(user.id),
+        "user_id": user.id,
         "role": user.role,
         "iat": agora,
         "exp": agora + timedelta(minutes=JWT_EXPIRE_MINUTES),
@@ -59,3 +60,21 @@ def get_current_user(
     if user is None:
         raise erro
     return user
+
+
+def exigir_roles(*roles: str):
+    """Dependência: só deixa passar quem tem um dos perfis informados.
+
+    O perfil é lido do BANCO (não do claim do token), então mudar o token
+    no cliente não concede acesso a nada.
+    """
+
+    def verificador(usuario: User = Depends(get_current_user)) -> User:
+        if usuario.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Seu perfil não tem acesso a este recurso.",
+            )
+        return usuario
+
+    return verificador

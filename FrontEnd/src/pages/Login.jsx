@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUsuario, TOKEN_KEY } from '../services/api';
+import { loginUsuario, logout, rotaInicialPorRole, TOKEN_KEY } from '../services/api';
 import { 
   Heart, 
   User, 
@@ -17,6 +17,11 @@ export default function Login() {
   const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
 
+  // Chegar na tela de login encerra qualquer sessão anterior (cobre o botão "Sair")
+  useEffect(() => {
+    logout();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -26,12 +31,13 @@ export default function Login() {
     }
 
     try {
-      const { access_token } = await loginUsuario({
+      const { access_token, role } = await loginUsuario({
         identificador: identificador.trim(),
         senha: password,
       });
       localStorage.setItem(TOKEN_KEY, access_token);
-      navigate('/home');
+      // Idoso -> Home | Cuidador/Familiar -> Painel do Cuidador
+      navigate(rotaInicialPorRole(role));
     } catch (error) {
       alert(error.message);
     }

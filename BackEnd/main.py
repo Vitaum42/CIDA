@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import models  # noqa: F401  (registra todas as tabelas no Base.metadata)
 from database.conection import Base, engine
+from routes.elder_routes import router as elder_router
+from routes.emergency_routes import router as emergency_router
 from routes.places_routes import router as places_router
 from routes.user_routes import router as user_router
 
@@ -21,6 +23,8 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(places_router)
+app.include_router(elder_router)
+app.include_router(emergency_router)
 
 @app.get("/")
 def rota():

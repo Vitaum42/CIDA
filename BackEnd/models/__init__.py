@@ -6,6 +6,8 @@ from models.caregiver_models import Caregiver, caregiver_elder
 from models.family_Member_models import FamilyMember, family_member_elder
 from models.medication_models import Medication
 from models.midecal_record_models import MedicalRecord
+from models.elder_invite_models import ElderInvite
+from models.emergency_models import EmergencyAlert, EmergencyNotification
 
 __all__ = [
     "User",
@@ -14,6 +16,9 @@ __all__ = [
     "FamilyMember",
     "Medication",
     "MedicalRecord",
+    "ElderInvite",
+    "EmergencyAlert",
+    "EmergencyNotification",
     "caregiver_elder",
     "family_member_elder",
 ]

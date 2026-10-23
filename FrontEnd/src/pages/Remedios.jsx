@@ -13,9 +13,31 @@ import {
 import MobileContainer from '../components/MobileContainer';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
+import { buscarLocaisProximos } from '../services/api';
 
-// URL base da sua API (FastAPI / backend próprio ou proxy de dados abertos)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Distância em km entre dois pontos (fórmula de Haversine)
+function calcularDistanciaKm(lat1, lng1, lat2, lng2) {
+  const rad = (g) => (g * Math.PI) / 180;
+  const a =
+    Math.sin(rad(lat2 - lat1) / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(rad(lng2 - lng1) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Converte um local do Google Places para o formato que os cards já renderizam.
+// O Google Places NÃO informa preço de remédio, por isso preco fica nulo.
+function adaptarLocal(local, lat, lng) {
+  const km = calcularDistanciaKm(lat, lng, local.latitude, local.longitude);
+  return {
+    id: local.id,
+    nome: local.nome,
+    endereco: local.endereco,
+    mapaUrl: local.mapa_url,
+    preco: null,
+    distanciaKm: km,
+    rotulo: `${km.toFixed(1).replace('.', ',')} km · sem preço`,
+  };
+}
 
 export default function Remedios() {
   const navigate = useNavigate();
@@ -24,38 +46,58 @@ export default function Remedios() {
   const [farmacias, setFarmacias] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
+  const [localizacao, setLocalizacao] = useState(null); // { lat, lng } do navegador
 
   // Ordenação: 'preco_asc' | 'preco_desc' | 'dist_asc' | 'dist_desc'
   const [modoOrdenacao, setModoOrdenacao] = useState('preco_asc');
 
-  // Função para buscar os medicamentos e farmácias via API
-  const carregarMedicamentos = useCallback(async (termo) => {
-    if (!termo.trim()) {
-      setFarmacias([]);
-      return;
-    }
-
+  // Busca no backend (Google Places) as farmácias próximas da localização.
+  // Com `termo`, busca por texto (ex.: "farmacia", "drogasil"); sem termo, as mais próximas.
+  const carregarFarmaciasProximas = useCallback(async ({ lat, lng }, termo = '') => {
     setCarregando(true);
     setErro(null);
 
     try {
-      const response = await fetch(`${API_URL}/medicamentos/busca?q=${encodeURIComponent(termo)}`);
-      
-      if (!response.ok) {
-        throw new Error('Não foi possível obter os preços no momento.');
-      }
-
-      const data = await response.json();
-      setFarmacias(data);
+      const locais = await buscarLocaisProximos({ lat, lng, tipo: 'pharmacy', raio: 3000, limite: 15, q: termo || undefined });
+      setFarmacias(locais.map((local) => adaptarLocal(local, lat, lng)));
     } catch (err) {
-      setErro(err.message || 'Erro ao conectar à internet.');
+      setErro(err.message || 'Erro ao buscar farmácias próximas.');
       setFarmacias([]);
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  // Dispara a busca quando o termo de pesquisa mudar
+  // Pega a localização atual do usuário (geolocalização do navegador)
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setErro('Seu navegador não suporta geolocalização.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        // Mantém o mesmo objeto se a posição não mudou (evita buscar duas vezes)
+        setLocalizacao((atual) => (atual && atual.lat === lat && atual.lng === lng ? atual : { lat, lng }));
+      },
+      () => setErro('Permita o acesso à localização no navegador para ver as farmácias próximas.'),
+      { timeout: 10000, maximumAge: 60000 },
+    );
+  }, []);
+
+  // Carrega a lista: com termo digitado busca por texto; sem termo, as mais próximas.
+  // (A busca não usa mais o endpoint /medicamentos/busca, que não existe no backend.)
+  const carregarMedicamentos = useCallback(async (termo) => {
+    if (!localizacao) {
+      // Ainda sem localização (ou permissão negada: o aviso já está em `erro`)
+      setFarmacias([]);
+      return;
+    }
+    await carregarFarmaciasProximas(localizacao, termo.trim());
+  }, [localizacao, carregarFarmaciasProximas]);
+
+  // Dispara a busca quando o termo de pesquisa (ou a localização) mudar
   useEffect(() => {
     carregarMedicamentos(termoPesquisa);
   }, [carregarMedicamentos, termoPesquisa]);
