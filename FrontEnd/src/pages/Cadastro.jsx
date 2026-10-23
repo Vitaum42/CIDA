@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { criarUsuario } from '../services/api';
+import { criarUsuario, loginUsuario, TOKEN_KEY } from '../services/api';
 import {
   Heart,
   ArrowLeft,
@@ -86,7 +86,14 @@ export default function Cadastro() {
       setCarregando(true);
       console.log('Enviando dados do idoso para a API:', payload);
       await criarUsuario(payload);
-      setSucesso(true);
+
+      // Conta criada: já faz o login e leva o usuário direto ao app
+      const { access_token } = await loginUsuario({
+        identificador: payload.email,
+        senha,
+      });
+      localStorage.setItem(TOKEN_KEY, access_token);
+      navigate('/home');
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
       setMensagemErro(

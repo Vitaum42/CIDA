@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginUsuario, TOKEN_KEY } from '../services/api';
 import { 
   Heart, 
   User, 
@@ -16,9 +17,24 @@ export default function Login() {
   const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/home');
+
+    if (!identificador.trim() || !password) {
+      alert('Informe seu celular (ou e-mail) e sua senha.');
+      return;
+    }
+
+    try {
+      const { access_token } = await loginUsuario({
+        identificador: identificador.trim(),
+        senha: password,
+      });
+      localStorage.setItem(TOKEN_KEY, access_token);
+      navigate('/home');
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
